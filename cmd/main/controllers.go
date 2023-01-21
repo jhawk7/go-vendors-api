@@ -14,7 +14,7 @@ import (
 
 // Effectively sets up handler middleware for receiving and responding for graphql reqeusts
 func PlayGroundHandler() gin.HandlerFunc {
-	h := playground.Handler("GraphQL playground", "/query")
+	h := playground.Handler("GraphQL playground", "/graphql/query")
 
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
