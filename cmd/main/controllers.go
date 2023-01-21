@@ -84,7 +84,7 @@ func UpdateVendor(c *gin.Context) {
 		return
 	}
 
-	if updateErr, notFound := dbClient.UpdateVendor(updateRequest); updateErr != nil {
+	if vendor, updateErr, notFound := dbClient.UpdateVendor(updateRequest); updateErr != nil {
 		var status int
 		if notFound {
 			status = http.StatusNotFound
@@ -94,9 +94,11 @@ func UpdateVendor(c *gin.Context) {
 
 		ErrorHandler(c, updateErr, status, false)
 		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"data": vendor,
+		})
 	}
-
-	c.JSON(http.StatusAccepted, nil)
 }
 
 func DeleteVendor(c *gin.Context) {

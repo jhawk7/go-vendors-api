@@ -16,7 +16,7 @@ type Vendor {
 }
 
 type Query {
-  getVendors: [Vendor]! #sets up query name and params
+  getActiveVendors: [Vendor]! #sets up query name and params
 }
 
 #input type for NewVendor
@@ -28,6 +28,20 @@ input NewVendor {
   desc: String
 }
 
+input UpdateVendor {
+  name: String!
+  updateFields: UpdateFields
+}
+
+input UpdateFields {
+  phone: String
+  email: String
+  cost: String
+  desc: String
+}
+
 type Mutation {
-  createVendor(input: NewVendor): Vendor! #sets up mutation with input and expected output 
+  createVendor(input: NewVendor): Vendor! #sets up mutation with input and expected output
+  updateVendor(input: UpdateVendor): Vendor!
+  deleteVendor(name: String): String
 }

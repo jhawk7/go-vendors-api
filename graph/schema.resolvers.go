@@ -12,73 +12,91 @@ import (
 
 	"github.com/jhawk7/go-vendors-api/graph/model"
 	"github.com/jhawk7/go-vendors-api/pkg/db"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
-
-var dbClient db.DBClient
 
 // CreateVendor is the resolver for the createVendor field.
 func (r *mutationResolver) CreateVendor(ctx context.Context, input *model.NewVendor) (*model.Vendor, error) {
-	var mVendor *model.Vendor
 	var dbVendor db.Vendor
+	var mVendor *model.Vendor
 
 	if reflect.DeepEqual(dbClient, db.DBClient{}) {
 		getDBConn()
 	}
 
-	b, bErr := json.Marshal(input)
-	if bErr != nil {
-		errorHandler(bErr, false)
-		return mVendor, bErr
+	if mErr := mapObject(&input, &dbVendor); mErr != nil {
+		errorHandler(mErr, false)
+		return mVendor, mErr
 	}
 
-	if jsonErr := json.Unmarshal(b, &dbVendor); jsonErr != nil {
-		errorHandler(jsonErr, false)
-		return mVendor, jsonErr
+	if createErr := dbClient.CreateVendor(&dbVendor); createErr != nil {
+		errorHandler(createErr, false)
+		return mVendor, createErr
 	}
 
-	if dbErr := dbClient.CreateVendor(&dbVendor); dbErr != nil {
+	if mErr := mapObject(&dbVendor, &mVendor); mErr != nil {
+		errorHandler(mErr, false)
+		return mVendor, mErr
+	}
+
+	return mVendor, nil
+}
+
+// UpdateVendor is the resolver for the updateVendor field.
+func (r *mutationResolver) UpdateVendor(ctx context.Context, input *model.UpdateVendor) (*model.Vendor, error) {
+	var mVendor *model.Vendor
+	var dbUpdate db.UpdateRequest
+
+	if reflect.DeepEqual(dbClient, db.DBClient{}) {
+		getDBConn()
+	}
+
+	if mErr := mapObject(&input, &dbUpdate); mErr != nil {
+		errorHandler(mErr, false)
+		return mVendor, mErr
+	}
+
+	dbVendor, dbErr, _ := dbClient.UpdateVendor(dbUpdate)
+	if dbErr != nil {
 		errorHandler(dbErr, false)
 		return mVendor, dbErr
 	}
 
-	vb, vbErr := json.Marshal(dbVendor)
-	if vbErr != nil {
-		errorHandler(vbErr, false)
-		return mVendor, vbErr
-	}
-
-	if vjsonErr := json.Unmarshal(vb, &mVendor); vjsonErr != nil {
-		errorHandler(vjsonErr, false)
-		return mVendor, vjsonErr
+	if mErr := mapObject(&dbVendor, &mVendor); mErr != nil {
+		errorHandler(dbErr, false)
+		return mVendor, dbErr
 	}
 
 	return mVendor, nil
-
 }
 
-// GetVendors is the resolver for the getVendors field.
-func (r *queryResolver) GetVendors(ctx context.Context) ([]*model.Vendor, error) {
+// DeleteVendor is the resolver for the deleteVendor field.
+func (r *mutationResolver) DeleteVendor(ctx context.Context, name *string) (*string, error) {
+	if reflect.DeepEqual(dbClient, db.DBClient{}) {
+		getDBConn()
+	}
+
+	dbClient.DeleteVendor(*name)
+	message := fmt.Sprintf("vendor %v deleted", *name)
+	return &message, nil
+}
+
+// GetActiveVendors is the resolver for the getActiveVendors field.
+func (r *queryResolver) GetActiveVendors(ctx context.Context) ([]*model.Vendor, error) {
 	var mVendors []*model.Vendor
 	if reflect.DeepEqual(dbClient, db.DBClient{}) {
 		getDBConn()
 	}
 
-	vendors, vErr := dbClient.GetActiveVendors()
-	if vErr != nil {
-		errorHandler(vErr, false)
-		return mVendors, vErr
+	dbVendors, dbErr := dbClient.GetActiveVendors()
+	if dbErr != nil {
+		errorHandler(dbErr, false)
+		return mVendors, dbErr
 	}
 
-	b, bErr := json.Marshal(vendors)
-	if bErr != nil {
-		errorHandler(bErr, false)
-		return mVendors, bErr
-	}
-
-	if jsonErr := json.Unmarshal(b, &mVendors); jsonErr != nil {
-		errorHandler(jsonErr, false)
-		return mVendors, jsonErr
+	if mErr := mapObject(&dbVendors, &mVendors); mErr != nil {
+		errorHandler(mErr, false)
+		return mVendors, mErr
 	}
 
 	return mVendors, nil
@@ -93,6 +111,14 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+var dbClient db.DBClient
+
 func getDBConn() {
 	if client, err := db.InitDB(); err != nil {
 		panic(fmt.Errorf("failed to connect to db; [error: %v]", err))
@@ -100,13 +126,26 @@ func getDBConn() {
 		dbClient = client
 	}
 }
-
 func errorHandler(err error, fatal bool) {
 	if err != nil {
-		log.Error(fmt.Errorf("error: %v", err))
+		logrus.Error(fmt.Errorf("error: %v", err))
 
 		if fatal {
 			panic(err)
 		}
 	}
+}
+func mapObject(oldObject interface{}, newObject interface{}) (mErr error) {
+	bytes, bErr := json.Marshal(oldObject)
+	if bErr != nil {
+		mErr = bErr
+		return
+	}
+
+	if jsonErr := json.Unmarshal(bytes, &newObject); jsonErr != nil {
+		mErr = jsonErr
+		return
+	}
+
+	return
 }

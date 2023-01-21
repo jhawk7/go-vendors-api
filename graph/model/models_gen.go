@@ -10,6 +10,18 @@ type NewVendor struct {
 	Desc  *string `json:"desc"`
 }
 
+type UpdateFields struct {
+	Phone *string `json:"phone"`
+	Email *string `json:"email"`
+	Cost  *string `json:"cost"`
+	Desc  *string `json:"desc"`
+}
+
+type UpdateVendor struct {
+	Name         string        `json:"name"`
+	UpdateFields *UpdateFields `json:"updateFields"`
+}
+
 type Vendor struct {
 	ID        *int    `json:"id"`
 	Name      string  `json:"name"`

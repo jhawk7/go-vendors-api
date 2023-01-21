@@ -1,3 +1,10 @@
 version: "3.2"
 services:
-  api:
+  go-vendors-api:
+    image: "jhawk7/go-vendors-api"
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./vendorsDB.db:/usr/src/app/vendorsDB.db
+    restart: always

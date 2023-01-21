@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -20,8 +21,8 @@ type Vendor struct {
 type Vendors []Vendor
 
 type UpdateRequest struct {
-	Name   string
-	Fields struct {
+	Name         string
+	UpdateFields struct {
 		Phone string `json:",omitempty"`
 		Email string `json:",omitempty"`
 		Cost  string `json:",omitempty"`
@@ -51,6 +52,14 @@ func InitDB() (client DBClient, err error) {
 
 func (client *DBClient) GetActiveVendors() (vendors Vendors, err error) {
 	if result := client.svc.Find(&vendors); result.Error != nil {
+		err = fmt.Errorf("failed to retrieve active vendors from db; [error: %v]", result.Error)
+		return
+	}
+	return
+}
+
+func (client *DBClient) GetAllVendors() (vendors Vendors, err error) {
+	if result := client.svc.Where("deleted_At <> ?", "null").Find(&vendors); result.Error != nil {
 		err = fmt.Errorf("failed to retrieve all vendors from db; [error: %v]", result.Error)
 		return
 	}
@@ -72,30 +81,30 @@ func (client *DBClient) CreateVendor(vendor *Vendor) (err error) {
 	return
 }
 
-func (client *DBClient) UpdateVendor(update UpdateRequest) (err error, notFound bool) {
-	var vendor Vendor
+func (client *DBClient) UpdateVendor(update UpdateRequest) (vendor Vendor, err error, notFound bool) {
 	if result := client.svc.Where("name = ?", update.Name).First(&vendor); result.Error != nil {
 		notFound = errors.Is(result.Error, gorm.ErrRecordNotFound)
 		err = fmt.Errorf("failed to retrieve vendor for update; [error: %v]", result.Error)
 		return
 	}
 
-	if update.Fields.Cost != "" {
-		vendor.Cost = update.Fields.Cost
+	if update.UpdateFields.Cost != "" {
+		vendor.Cost = update.UpdateFields.Cost
 	}
 
-	if update.Fields.Email != "" {
-		vendor.Email = update.Fields.Email
+	if update.UpdateFields.Email != "" {
+		vendor.Email = update.UpdateFields.Email
 	}
 
-	if update.Fields.Phone != "" {
-		vendor.Phone = update.Fields.Phone
+	if update.UpdateFields.Phone != "" {
+		vendor.Phone = update.UpdateFields.Phone
 	}
 
-	if update.Fields.Desc != "" {
-		vendor.Desc = update.Fields.Desc
+	if update.UpdateFields.Desc != "" {
+		vendor.Desc = update.UpdateFields.Desc
 	}
 
+	log.Infof("updated vendor: %v", vendor)
 	client.svc.Save(&vendor)
 	return
 }
@@ -103,5 +112,6 @@ func (client *DBClient) UpdateVendor(update UpdateRequest) (err error, notFound 
 func (client *DBClient) DeleteVendor(name string) {
 	var vendor Vendor
 	client.svc.Where("name = ?", name).Delete(&vendor) //soft delete
+	log.Infof("deleted vendor: %v", vendor)
 	return
 }
