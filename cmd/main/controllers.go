@@ -4,29 +4,32 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gin-gonic/gin"
+	"github.com/jhawk7/go-vendors-api/graph"
 	"github.com/jhawk7/go-vendors-api/pkg/db"
 	log "github.com/sirupsen/logrus"
 )
 
-var dbClient *db.DBClient
+// Effectively sets up handler middleware for receiving and responding for graphql reqeusts
+func PlayGroundHandler() gin.HandlerFunc {
+	h := playground.Handler("GraphQL playground", "/query")
 
-func main() {
-	client, dbErr := db.InitDB()
-	if dbErr != nil {
-		panic(dbErr)
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
 	}
-	dbClient = &client
-
-	r := gin.Default()
-	r.GET("/vendors", GetAllVendors)
-	r.GET("/vendors/:name", GetVendor)
-	r.POST("/vendors", CreateVendor)
-	r.PATCH("/vendors", UpdateVendor)
-	r.DELETE("/vendors", DeleteVendor)
-	r.Run() //runs on port 8080 by default
 }
 
+func GraphqlHandler() gin.HandlerFunc {
+	h := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
+
+// REST Handlers
 func GetAllVendors(c *gin.Context) {
 	vendors, err := dbClient.GetActiveVendors()
 	if err != nil {

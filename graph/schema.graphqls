@@ -1,0 +1,33 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+#schema type for query input
+type Vendor {
+  id: Int
+  name: String! #only requiring name
+	phone: String
+	email: String
+	cost: String
+	desc: String
+  createdAt: String
+  updatedAt: String
+  deletedAt: String
+}
+
+type Query {
+  getVendors: [Vendor]! #sets up query name and params
+}
+
+#input type for NewVendor
+input NewVendor {
+  name: String!
+  phone: String
+  email: String
+  cost: String
+  desc: String
+}
+
+type Mutation {
+  createVendor(input: NewVendor): Vendor! #sets up mutation with input and expected output 
+}
