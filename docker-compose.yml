@@ -6,5 +6,5 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./vendorsDB.db:/usr/src/app/vendorsDB.db
+      - ./vendorsDB.db:/app/vendorsDB.db
     restart: always
