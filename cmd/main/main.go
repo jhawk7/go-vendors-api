@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/jhawk7/go-vendors-api/pkg/db"
+	"github.com/jhawk7/go-vendors-api/internal/pkg/db"
 )
 
 var dbClient *db.DBClient

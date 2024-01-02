@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/jhawk7/go-vendors-api/internal/handlers"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -46,6 +46,7 @@ func InitDB() (client DBClient, err error) {
 	}
 
 	db.AutoMigrate(&Vendor{})
+	handlers.LogInfo("db initialized")
 	client.svc = db
 	return
 }
@@ -55,6 +56,8 @@ func (client *DBClient) GetActiveVendors() (vendors Vendors, err error) {
 		err = fmt.Errorf("failed to retrieve active vendors from db; [error: %v]", result.Error)
 		return
 	}
+
+	handlers.LogInfo("retreived all active vendors")
 	return
 }
 
@@ -63,6 +66,8 @@ func (client *DBClient) GetAllVendors() (vendors Vendors, err error) {
 		err = fmt.Errorf("failed to retrieve all vendors from db; [error: %v]", result.Error)
 		return
 	}
+
+	handlers.LogInfo("retrieved all vendors")
 	return
 }
 
@@ -71,6 +76,8 @@ func (client *DBClient) GetVendorByName(name string) (vendor Vendor, err error, 
 		notFound = errors.Is(result.Error, gorm.ErrRecordNotFound)
 		err = fmt.Errorf("failed to retrieve vendor %v by name; [error: %v]", name, result.Error)
 	}
+
+	handlers.LogInfo(fmt.Sprintf("retrieved vendor %v", name))
 	return
 }
 
@@ -78,6 +85,8 @@ func (client *DBClient) CreateVendor(vendor *Vendor) (err error) {
 	if result := client.svc.Create(&vendor); result.Error != nil {
 		err = fmt.Errorf("failed to create vendor; [error: %v]", result.Error)
 	}
+
+	handlers.LogInfo(fmt.Sprintf("created vendor %v", vendor.Name))
 	return
 }
 
@@ -104,7 +113,7 @@ func (client *DBClient) UpdateVendor(update UpdateRequest) (vendor Vendor, err e
 		vendor.Desc = update.UpdateFields.Desc
 	}
 
-	log.Infof("updated vendor: %v", vendor)
+	handlers.LogInfo(fmt.Sprintf("updated vendor: %v", vendor))
 	client.svc.Save(&vendor)
 	return
 }
@@ -112,6 +121,6 @@ func (client *DBClient) UpdateVendor(update UpdateRequest) (vendor Vendor, err e
 func (client *DBClient) DeleteVendor(name string) {
 	var vendor Vendor
 	client.svc.Where("name = ?", name).Delete(&vendor) //soft delete
-	log.Infof("deleted vendor: %v", vendor)
+	handlers.LogInfo(fmt.Sprintf("deleted vendor: %v", vendor))
 	return
 }

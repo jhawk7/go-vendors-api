@@ -8,8 +8,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gin-gonic/gin"
 	"github.com/jhawk7/go-vendors-api/graph"
-	"github.com/jhawk7/go-vendors-api/pkg/db"
-	log "github.com/sirupsen/logrus"
+	"github.com/jhawk7/go-vendors-api/internal/handlers"
+	"github.com/jhawk7/go-vendors-api/internal/pkg/db"
 )
 
 // Effectively sets up handler middleware for receiving and responding for graphql reqeusts
@@ -33,7 +33,7 @@ func GraphqlHandler() gin.HandlerFunc {
 func GetAllVendors(c *gin.Context) {
 	vendors, err := dbClient.GetActiveVendors()
 	if err != nil {
-		ErrorHandler(c, err, http.StatusInternalServerError, false)
+		handlers.ErrorHandler(c, err, http.StatusInternalServerError, false)
 		return
 	}
 
@@ -51,7 +51,7 @@ func GetVendor(c *gin.Context) {
 		} else {
 			status = http.StatusBadRequest
 		}
-		ErrorHandler(c, err, status, false)
+		handlers.ErrorHandler(c, err, status, false)
 		return
 	}
 
@@ -63,12 +63,13 @@ func GetVendor(c *gin.Context) {
 func CreateVendor(c *gin.Context) {
 	var vendor db.Vendor
 	if bindErr := c.Bind(&vendor); bindErr != nil {
-		ErrorHandler(c, bindErr, 0, false)
+		err := fmt.Errorf("failed to bind input params for request %v", bindErr)
+		handlers.ErrorHandler(c, err, http.StatusBadRequest, false)
 		return
 	}
 
 	if createErr := dbClient.CreateVendor(&vendor); createErr != nil {
-		ErrorHandler(c, createErr, http.StatusBadRequest, false)
+		handlers.ErrorHandler(c, createErr, http.StatusBadRequest, false)
 		return
 	}
 
@@ -80,50 +81,36 @@ func CreateVendor(c *gin.Context) {
 func UpdateVendor(c *gin.Context) {
 	var updateRequest db.UpdateRequest
 	if bindErr := c.Bind(&updateRequest); bindErr != nil {
-		ErrorHandler(c, bindErr, 0, false)
+		err := fmt.Errorf("failed to bind input params for request %v", bindErr)
+		handlers.ErrorHandler(c, err, http.StatusBadRequest, false)
 		return
 	}
 
-	if vendor, updateErr, notFound := dbClient.UpdateVendor(updateRequest); updateErr != nil {
+	vendor, updateErr, notFound := dbClient.UpdateVendor(updateRequest)
+	if updateErr != nil {
 		var status int
 		if notFound {
 			status = http.StatusNotFound
 		} else {
 			status = http.StatusBadRequest
 		}
-
-		ErrorHandler(c, updateErr, status, false)
+		handlers.ErrorHandler(c, updateErr, status, false)
 		return
-	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"data": vendor,
-		})
 	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": vendor,
+	})
 }
 
 func DeleteVendor(c *gin.Context) {
 	var req db.DeleteRequest
 	if bindErr := c.Bind(&req); bindErr != nil {
-		ErrorHandler(c, bindErr, 0, false)
+		err := fmt.Errorf("failed to bind input params for request %v", bindErr)
+		handlers.ErrorHandler(c, err, http.StatusBadRequest, false)
 		return
 	}
 
 	dbClient.DeleteVendor(req.Name)
-	c.JSON(http.StatusNoContent, nil)
-}
-
-func ErrorHandler(c *gin.Context, err error, status int, fatal bool) {
-	if err != nil {
-		log.Error(fmt.Errorf("error: %v", err.Error()))
-
-		if fatal {
-			panic(err)
-		}
-
-		if status != 0 {
-			c.JSON(status, gin.H{
-				"error": err.Error(),
-			})
-		}
-	}
+	c.Status(http.StatusNoContent)
 }

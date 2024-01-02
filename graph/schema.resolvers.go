@@ -11,7 +11,7 @@ import (
 	"reflect"
 
 	"github.com/jhawk7/go-vendors-api/graph/model"
-	"github.com/jhawk7/go-vendors-api/pkg/db"
+	"github.com/jhawk7/go-vendors-api/internal/pkg/db"
 	"github.com/sirupsen/logrus"
 )
 
