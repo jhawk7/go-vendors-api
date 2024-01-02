@@ -8,8 +8,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gin-gonic/gin"
 	"github.com/jhawk7/go-vendors-api/graph"
-	"github.com/jhawk7/go-vendors-api/internal/handlers"
 	"github.com/jhawk7/go-vendors-api/internal/pkg/db"
+	"github.com/jhawk7/go-vendors-api/internal/pkg/handlers"
 )
 
 // Effectively sets up handler middleware for receiving and responding for graphql reqeusts
@@ -61,14 +61,14 @@ func GetVendor(c *gin.Context) {
 }
 
 func CreateVendor(c *gin.Context) {
-	var vendor db.Vendor
-	if bindErr := c.Bind(&vendor); bindErr != nil {
+	vendor := new(db.Vendor)
+	if bindErr := c.Bind(vendor); bindErr != nil {
 		err := fmt.Errorf("failed to bind input params for request %v", bindErr)
 		handlers.ErrorHandler(c, err, http.StatusBadRequest, false)
 		return
 	}
 
-	if createErr := dbClient.CreateVendor(&vendor); createErr != nil {
+	if createErr := dbClient.CreateVendor(vendor); createErr != nil {
 		handlers.ErrorHandler(c, createErr, http.StatusBadRequest, false)
 		return
 	}
@@ -79,8 +79,8 @@ func CreateVendor(c *gin.Context) {
 }
 
 func UpdateVendor(c *gin.Context) {
-	var updateRequest db.UpdateRequest
-	if bindErr := c.Bind(&updateRequest); bindErr != nil {
+	updateRequest := new(db.UpdateRequest)
+	if bindErr := c.Bind(updateRequest); bindErr != nil {
 		err := fmt.Errorf("failed to bind input params for request %v", bindErr)
 		handlers.ErrorHandler(c, err, http.StatusBadRequest, false)
 		return
@@ -104,8 +104,8 @@ func UpdateVendor(c *gin.Context) {
 }
 
 func DeleteVendor(c *gin.Context) {
-	var req db.DeleteRequest
-	if bindErr := c.Bind(&req); bindErr != nil {
+	req := new(db.DeleteRequest)
+	if bindErr := c.Bind(req); bindErr != nil {
 		err := fmt.Errorf("failed to bind input params for request %v", bindErr)
 		handlers.ErrorHandler(c, err, http.StatusBadRequest, false)
 		return

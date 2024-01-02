@@ -17,24 +17,24 @@ import (
 
 // CreateVendor is the resolver for the createVendor field.
 func (r *mutationResolver) CreateVendor(ctx context.Context, input *model.NewVendor) (*model.Vendor, error) {
-	var dbVendor db.Vendor
-	var mVendor *model.Vendor
+	dbVendor := new(db.Vendor)
+	mVendor := new(model.Vendor)
 
 	if reflect.DeepEqual(dbClient, db.DBClient{}) {
 		getDBConn()
 	}
 
-	if mErr := mapObject(&input, &dbVendor); mErr != nil {
+	if mErr := mapObject(input, dbVendor); mErr != nil {
 		errorHandler(mErr, false)
 		return mVendor, mErr
 	}
 
-	if createErr := dbClient.CreateVendor(&dbVendor); createErr != nil {
+	if createErr := dbClient.CreateVendor(dbVendor); createErr != nil {
 		errorHandler(createErr, false)
 		return mVendor, createErr
 	}
 
-	if mErr := mapObject(&dbVendor, &mVendor); mErr != nil {
+	if mErr := mapObject(dbVendor, mVendor); mErr != nil {
 		errorHandler(mErr, false)
 		return mVendor, mErr
 	}
@@ -44,14 +44,14 @@ func (r *mutationResolver) CreateVendor(ctx context.Context, input *model.NewVen
 
 // UpdateVendor is the resolver for the updateVendor field.
 func (r *mutationResolver) UpdateVendor(ctx context.Context, input *model.UpdateVendor) (*model.Vendor, error) {
-	var mVendor *model.Vendor
-	var dbUpdate db.UpdateRequest
+	mVendor := new(model.Vendor)
+	dbUpdate := new(db.UpdateRequest)
 
 	if reflect.DeepEqual(dbClient, db.DBClient{}) {
 		getDBConn()
 	}
 
-	if mErr := mapObject(&input, &dbUpdate); mErr != nil {
+	if mErr := mapObject(input, dbUpdate); mErr != nil {
 		errorHandler(mErr, false)
 		return mVendor, mErr
 	}
@@ -62,7 +62,7 @@ func (r *mutationResolver) UpdateVendor(ctx context.Context, input *model.Update
 		return mVendor, dbErr
 	}
 
-	if mErr := mapObject(&dbVendor, &mVendor); mErr != nil {
+	if mErr := mapObject(dbVendor, mVendor); mErr != nil {
 		errorHandler(dbErr, false)
 		return mVendor, dbErr
 	}

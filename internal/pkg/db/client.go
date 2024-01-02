@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jhawk7/go-vendors-api/internal/handlers"
+	"github.com/jhawk7/go-vendors-api/internal/pkg/handlers"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -90,7 +90,7 @@ func (client *DBClient) CreateVendor(vendor *Vendor) (err error) {
 	return
 }
 
-func (client *DBClient) UpdateVendor(update UpdateRequest) (vendor Vendor, err error, notFound bool) {
+func (client *DBClient) UpdateVendor(update *UpdateRequest) (vendor Vendor, err error, notFound bool) {
 	if result := client.svc.Where("name = ?", update.Name).First(&vendor); result.Error != nil {
 		notFound = errors.Is(result.Error, gorm.ErrRecordNotFound)
 		err = fmt.Errorf("failed to retrieve vendor for update; [error: %v]", result.Error)
@@ -119,8 +119,7 @@ func (client *DBClient) UpdateVendor(update UpdateRequest) (vendor Vendor, err e
 }
 
 func (client *DBClient) DeleteVendor(name string) {
-	var vendor Vendor
+	vendor := new(Vendor)
 	client.svc.Where("name = ?", name).Delete(&vendor) //soft delete
 	handlers.LogInfo(fmt.Sprintf("deleted vendor: %v", vendor))
-	return
 }
