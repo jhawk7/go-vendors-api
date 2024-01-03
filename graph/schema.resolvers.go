@@ -94,7 +94,7 @@ func (r *queryResolver) GetActiveVendors(ctx context.Context) ([]*model.Vendor, 
 		return mVendors, dbErr
 	}
 
-	if mErr := mapObject(&dbVendors, &mVendors); mErr != nil {
+	if mErr := mapObject(*dbVendors, &mVendors); mErr != nil {
 		errorHandler(mErr, false)
 		return mVendors, mErr
 	}
