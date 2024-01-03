@@ -4,7 +4,7 @@ COPY . ./
 RUN go mod download
 RUN mkdir bin
 RUN apk add build-base
-RUN cd cmd/main/ && go build -o ../../bin/go-vendors-api
+RUN cd cmd/app/ && go build -o ../../bin/go-vendors-api
 
 FROM golang:1.20.11-alpine3.18
 WORKDIR /go
