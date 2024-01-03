@@ -56,7 +56,7 @@ func (r *mutationResolver) UpdateVendor(ctx context.Context, input *model.Update
 		return mVendor, mErr
 	}
 
-	dbVendor, dbErr, _ := dbClient.UpdateVendor(dbUpdate)
+	dbVendor, _, dbErr := dbClient.UpdateVendor(dbUpdate)
 	if dbErr != nil {
 		errorHandler(dbErr, false)
 		return mVendor, dbErr
@@ -117,7 +117,7 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
-var dbClient db.DBClient
+var dbClient *db.DBClient
 
 func getDBConn() {
 	if client, err := db.InitDB(); err != nil {

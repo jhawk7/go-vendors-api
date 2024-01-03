@@ -12,7 +12,7 @@ func main() {
 	if dbErr != nil {
 		panic(dbErr)
 	}
-	dbClient = &client
+	dbClient = client
 
 	router := gin.Default()
 
@@ -23,7 +23,8 @@ func main() {
 		gql.POST("/query", GraphqlHandler())
 	}
 
-	router.GET("/vendors", GetAllVendors)
+	router.GET("/vendors", GetActiveVendors)
+	//router.GET("/vendors/all", GetActiveVendors)
 	router.GET("/vendors/:name", GetVendor)
 	router.POST("/vendors", CreateVendor)
 	router.PATCH("/vendors", UpdateVendor)

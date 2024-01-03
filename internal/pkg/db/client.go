@@ -18,11 +18,11 @@ type Vendor struct {
 	Desc  string
 }
 
-type Vendors []Vendor
+//type Vendors []Vendor //sqlite needs pointer to struct or slice
 
 type UpdateRequest struct {
-	Name         string
-	UpdateFields struct {
+	Name    string
+	Changes struct {
 		Phone string `json:",omitempty"`
 		Email string `json:",omitempty"`
 		Cost  string `json:",omitempty"`
@@ -38,7 +38,8 @@ type DBClient struct {
 	svc *gorm.DB
 }
 
-func InitDB() (client DBClient, err error) {
+func InitDB() (client *DBClient, err error) {
+	client = new(DBClient)
 	db, dbErr := gorm.Open(sqlite.Open("vendorsDB.db"), &gorm.Config{})
 	if dbErr != nil {
 		err = fmt.Errorf("failed to initialize db; [error: %v]", dbErr)
@@ -51,7 +52,7 @@ func InitDB() (client DBClient, err error) {
 	return
 }
 
-func (client *DBClient) GetActiveVendors() (vendors Vendors, err error) {
+func (client *DBClient) GetActiveVendors() (vendors *[]Vendor, err error) {
 	if result := client.svc.Find(&vendors); result.Error != nil {
 		err = fmt.Errorf("failed to retrieve active vendors from db; [error: %v]", result.Error)
 		return
@@ -61,7 +62,7 @@ func (client *DBClient) GetActiveVendors() (vendors Vendors, err error) {
 	return
 }
 
-func (client *DBClient) GetAllVendors() (vendors Vendors, err error) {
+func (client *DBClient) GetAllVendors() (vendors *[]Vendor, err error) {
 	if result := client.svc.Where("deleted_At <> ?", "null").Find(&vendors); result.Error != nil {
 		err = fmt.Errorf("failed to retrieve all vendors from db; [error: %v]", result.Error)
 		return
@@ -71,13 +72,21 @@ func (client *DBClient) GetAllVendors() (vendors Vendors, err error) {
 	return
 }
 
-func (client *DBClient) GetVendorByName(name string) (vendor Vendor, err error, notFound bool) {
-	if result := client.svc.Find(&vendor, "name = ?", name); result.Error != nil {
+func (client *DBClient) GetVendorByName(name string) (vendor *Vendor, notFound bool, err error) {
+	result := client.svc.Find(&vendor, "name = ?", name)
+	if result.Error != nil {
 		notFound = errors.Is(result.Error, gorm.ErrRecordNotFound)
 		err = fmt.Errorf("failed to retrieve vendor %v by name; [error: %v]", name, result.Error)
+		return
 	}
 
-	handlers.LogInfo(fmt.Sprintf("retrieved vendor %v", name))
+	if vendor.Name == "" {
+		notFound = true
+		err = fmt.Errorf("vendor %v not found", name)
+		return
+	}
+
+	handlers.LogInfo(fmt.Sprintf("retrieved vendor %v; %v", vendor.Name, result))
 	return
 }
 
@@ -90,27 +99,27 @@ func (client *DBClient) CreateVendor(vendor *Vendor) (err error) {
 	return
 }
 
-func (client *DBClient) UpdateVendor(update *UpdateRequest) (vendor Vendor, err error, notFound bool) {
+func (client *DBClient) UpdateVendor(update *UpdateRequest) (vendor *Vendor, notFound bool, err error) {
 	if result := client.svc.Where("name = ?", update.Name).First(&vendor); result.Error != nil {
 		notFound = errors.Is(result.Error, gorm.ErrRecordNotFound)
 		err = fmt.Errorf("failed to retrieve vendor for update; [error: %v]", result.Error)
 		return
 	}
 
-	if update.UpdateFields.Cost != "" {
-		vendor.Cost = update.UpdateFields.Cost
+	if update.Changes.Cost != "" {
+		vendor.Cost = update.Changes.Cost
 	}
 
-	if update.UpdateFields.Email != "" {
-		vendor.Email = update.UpdateFields.Email
+	if update.Changes.Email != "" {
+		vendor.Email = update.Changes.Email
 	}
 
-	if update.UpdateFields.Phone != "" {
-		vendor.Phone = update.UpdateFields.Phone
+	if update.Changes.Phone != "" {
+		vendor.Phone = update.Changes.Phone
 	}
 
-	if update.UpdateFields.Desc != "" {
-		vendor.Desc = update.UpdateFields.Desc
+	if update.Changes.Desc != "" {
+		vendor.Desc = update.Changes.Desc
 	}
 
 	handlers.LogInfo(fmt.Sprintf("updated vendor: %v", vendor))
@@ -118,8 +127,12 @@ func (client *DBClient) UpdateVendor(update *UpdateRequest) (vendor Vendor, err 
 	return
 }
 
-func (client *DBClient) DeleteVendor(name string) {
+func (client *DBClient) DeleteVendor(name string) (err error) {
 	vendor := new(Vendor)
-	client.svc.Where("name = ?", name).Delete(&vendor) //soft delete
+	if result := client.svc.Where("name = ?", name).Delete(&vendor); result.Error != nil {
+		err = fmt.Errorf("failed to delete vendor %v; %v", name, result.Error)
+		return
+	} //soft delete
 	handlers.LogInfo(fmt.Sprintf("deleted vendor: %v", vendor))
+	return
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -30,7 +31,7 @@ func GraphqlHandler() gin.HandlerFunc {
 }
 
 // REST Handlers
-func GetAllVendors(c *gin.Context) {
+func GetActiveVendors(c *gin.Context) {
 	vendors, err := dbClient.GetActiveVendors()
 	if err != nil {
 		handlers.ErrorHandler(c, err, http.StatusInternalServerError, false)
@@ -43,7 +44,8 @@ func GetAllVendors(c *gin.Context) {
 }
 
 func GetVendor(c *gin.Context) {
-	vendor, err, notFound := dbClient.GetVendorByName(c.Param("name"))
+	name := sanitizeName(c.Param("name"))
+	vendor, notFound, err := dbClient.GetVendorByName(name)
 	if err != nil {
 		var status int
 		if notFound {
@@ -68,6 +70,8 @@ func CreateVendor(c *gin.Context) {
 		return
 	}
 
+	vendor.Name = sanitizeName(vendor.Name)
+
 	if createErr := dbClient.CreateVendor(vendor); createErr != nil {
 		handlers.ErrorHandler(c, createErr, http.StatusBadRequest, false)
 		return
@@ -85,8 +89,8 @@ func UpdateVendor(c *gin.Context) {
 		handlers.ErrorHandler(c, err, http.StatusBadRequest, false)
 		return
 	}
-
-	vendor, updateErr, notFound := dbClient.UpdateVendor(updateRequest)
+	updateRequest.Name = sanitizeName(updateRequest.Name)
+	vendor, notFound, updateErr := dbClient.UpdateVendor(updateRequest)
 	if updateErr != nil {
 		var status int
 		if notFound {
@@ -111,6 +115,14 @@ func DeleteVendor(c *gin.Context) {
 		return
 	}
 
-	dbClient.DeleteVendor(req.Name)
+	req.Name = sanitizeName(req.Name)
+	if err := dbClient.DeleteVendor(req.Name); err != nil {
+		handlers.ErrorHandler(c, err, 0, false)
+	}
 	c.Status(http.StatusNoContent)
+}
+
+func sanitizeName(name string) string {
+	safename := strings.TrimSpace(strings.ToLower(name))
+	return safename
 }

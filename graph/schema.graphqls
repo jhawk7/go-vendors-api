@@ -30,10 +30,10 @@ input NewVendor {
 
 input UpdateVendor {
   name: String!
-  updateFields: UpdateFields
+  Changes: Changes
 }
 
-input UpdateFields {
+input Changes {
   phone: String
   email: String
   cost: String
